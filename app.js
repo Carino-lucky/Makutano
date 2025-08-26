@@ -6,26 +6,76 @@ const connection = mysql.createConnection({
   user: "root",
   password: "Lucky@6148",
   database: "socialapp",
+  port: 3306,
 });
+
+// middleware
+app.use(express.urlencoded({ extended: true })); // to parse/extract incoming/request form data
 
 // routes
 app.get("/", (req, res) => {
-  res.render("index.ejs");
-});
-app.get("/users", (req, res) => {
-  console.log(req.query.id);
-  console.log(req.query.person);
-  connection.query("SELECT * FROM users", (dbarr, result) => {
-    if (dbarr) {
-      return res.status(500).send("error retrieving users" + dbarr);
+  // render posts
+  connection.query("SELECT * FROM posts  limit 6", (dberr, results) => {
+    if (dberr) {
+      return res.status(500).send("Error retrieving posts" + dberr);
     }
-    res.render("users.ejs", { users: result });
+    console.log(results);
+    res.render("index.ejs", { posts: results });
   });
 });
 
+app.post("/newpost", (req, res) => {
+  // sql insert into
+  console.log(req.body.content);
+  connection.query(
+    `INSERT INTO posts(content,postowner) VALUES("${req.body.content}",2)`,
+    (dberr) => {
+      if (dberr) {
+        return res.status(500).send("Error storing post" + dberr);
+      }
+      res.redirect("/");
+    }
+  );
+});
+
+// try adding a new user fro a form submision --- create newuser.js file, newuser get route and a newuser post route
+app.get("/newuser", (req, res) => {
+  res.render("newuser.ejs");
+});
+app.post("/newuser", (req, res) => {
+  console.log(req.body);
+  const { fullname, email, password } = req.body;
+  connection.query(
+    `INSERT INTO users(fullname,email,password) VALUES("${fullname}","${email}","${password}")`,
+    (dberr) => {
+      if (dberr) {
+        return res.status(500).send("Error storing/creating new user" + dberr);
+      }
+      res.redirect("/users");
+    }
+  );
+});
+
+app.get("/users", (req, res) => {
+  console.log(req.query.id);
+  console.log(req.query.person);
+  connection.query("SELECT * FROM users", (dberr, results) => {
+    if (dberr) {
+      return res.status(500).send("Error retrieving users" + dberr);
+    }
+    res.render("users.ejs", { users: results });
+  });
+});
 // 404
 app.use((req, res) => {
-  res.status(404).send("page not found");
+  res.status(404).send("Page Not Found");
 });
-// start the app
-app.listen(3003, () => console.log("app running on http://127.0.0.1:3003"));
+// Start the app
+app.listen(3003, (err) => {
+  if (err) {
+    return console.log("Error starting the server" + err);
+  }
+
+  console.log("App running on http://127.0.0.1:3003");
+});
+// create a diff registration form, routes(/register) and table with more user information - fiirstname, lastname, email, phone, password, YOB, gender(use a radio button), country, city.
